@@ -1,0 +1,46 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Кеширование зависимостей (ускоряет следующие запуски)
+cache:
+  paths:
+    - .cache/pip
+    - venv/
+
+# Запуск тестов
+test:
+  stage: test
+  image: python:3.11
+  before_script:
+    - python -V  # Проверка версии Python
+    - pip install virtualenv
+    - virtualenv venv
+    - source venv/bin/activate
+    - pip install -r requirements.txt
+  script:
+    - pytest tests/  # Замените на вашу команду для тестов
+
+# Сборка проекта (пример для Docker)
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t ваш-образ .
+    - echo "Сборка завершена!"
+
+# Деплой 
+deploy:
+  stage: deploy
+  only:
+    - main  # Запускать только при пуше в main
+  script:
+    - echo "Деплой на сервер..."
+    - apt-get update -qq && apt-get install -y -qq sshpass
+    - sshpass -p "$SSH_PASSWORD" scp -o StrictHostKeyChecking=no ./ваш-файл user@server:/путь/на/сервере
